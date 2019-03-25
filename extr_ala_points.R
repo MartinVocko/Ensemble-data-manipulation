@@ -1,11 +1,18 @@
 setwd("~/Plocha/DATA/Aladin_4ext")
-fls = dir(pattern = '*grb')
+folds=list.files("/home/vokounm/Plocha/Data_CHMU/Aladin16")
+#fls = dir(pattern = '*grb')
 template = 'ncl_convert2nc XXX'
 
 #konverze do nc
-for (i in 1:length(fls)){
-  exe = paste('ncl_convert2nc', fls[i])
-  system(exe,wait=FALSE)
+
+for (j in 1:length(folds)){ 
+  setwd(file.path("~/Plocha/Data_CHMU/Aladin16",folds[j]))       #projizdi jednotlive slozky
+  fls = dir(pattern = '*grb')
+  
+      for (i in 1:length(fls)){
+      exe = paste('ncl_convert2nc', fls[i])                          #konvertuje y .grb do .nc
+      system(exe,wait=FALSE)
+      }
 }
 
 ####################################################################################################
