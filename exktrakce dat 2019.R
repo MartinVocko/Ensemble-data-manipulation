@@ -196,6 +196,96 @@ for(i in seq_along(temp)){    #nasmeruje do slozky s daty
 
 
   
+##### ALADIN 2011-2015 ##########
+
+setwd("~/Plocha/Data_CHMU/Aladin_4ext")
+fun=function(a,b){b-a}
+dirdat=list.files(pattern=".nc")
+v1=c("_06","_12", "_18", "_24", "30", "_36", "_42", "_48")
+v2=c( "_12", "_18", "_24", "_30", "_36", "_42", "_48", "_54")
+
+
+     for (k in seq_along(v2)) {
+    
+        
+         #r1=stack(dirdat[grepl(pattern = v1[k], x = dirdat)], varname )  
+         #r2=stack(dirdat[grepl(pattern = v2[k], x = dirdat)])  #nacte vrstvy k odecteni sumarizovanych srazek
+         #rdiff=fun(r1,r2)
+       
+         d1=dirdat[grepl(pattern = v1[k], x = dirdat)]
+         d2=dirdat[grepl(pattern = v2[k], x = dirdat)]
+         
+         for (m in seq_along(d2)) { 
+           
+           r1=raster(d1[m], varname="A_PCP_GDS3_HTGL")  
+           r2=raster(d2[m], varname="A_PCP_GDS3_HTGL")    #nacte vrstvy k odecteni sumarizovanych srazek
+           rdiff=fun(r1,r2)
+         
+            datum <- substr(d2[m], start = 19,stop = nchar(d2[m])-3)
+            nove_jmeno <- paste0("SURFPREC_TOTAL_", datum, v2[k], "h.nc")
+            
+            writeRaster(rdiff, filename = paste0('~/Plocha/Data_CHMU/Aladin_4ext_unsum/',nove_jmeno), overwrite=TRUE)
+        }   
+     }
+
+### 6h
+
+dirdat=list.files(pattern="_06")
+for (m in seq_along(dirdat)) { 
+  
+  r=raster(dirdat[m], varname="A_PCP_GDS3_HTGL")
+  datum <- substr(dirdat[m], start = 19,stop = nchar(dirdat[m])-3)
+  nove_jmeno <- paste0("SURFPREC_TOTAL_", datum, "_06h.nc")
+  writeRaster(r, filename = paste0('~/Plocha/Data_CHMU/Aladin_4ext_unsum/',nove_jmeno), overwrite=TRUE)
+  
+}
+
+
+###### ALADIN 2015=2018  ###########################
+setwd("~/Plocha/Data_CHMU/PRECIP/aladin")
+temp <- dir()
+fun=function(a,b){b-a}
+
+v1=c("+06.nc","+12.nc", "+18.nc", "+24.nc", "+30.nc", "+36.nc", "+42.nc", "+48.nc")
+v2=c( "+12.nc", "+18.nc", "+24.nc", "+30.nc", "+36.nc", "+42.nc", "+48.nc", "+54.nc")
+
+for (i in seq_along(temp)){
+     setwd(file.path("~/Plocha/Data_CHMU/PRECIP/aladin/", temp[[i]]))
+     dirdat=list.files(pattern=".nc")
+
+      for (k in seq_along(v2)) {
+  
+     d1=dirdat[grepl(pattern = v1[k], x = dirdat)]
+     d2=dirdat[grepl(pattern = v2[k], x = dirdat)]
+  
+           for (m in seq_along(d2)) { 
+    
+    r1=raster(d1[m], varname="A_PCP_GDS3_HTGL")  
+    r2=raster(d2[m], varname="A_PCP_GDS3_HTGL")    #nacte vrstvy k odecteni sumarizovanych srazek
+    rdiff=fun(r1,r2)
+    
+    datum <- substr(d2[m], start = 16,stop = nchar(d2[m])-6)
+    nove_jmeno <- paste0("SURFPREC_TOTAL_", datum,v2[k])
+    nove_jmeno <- gsub("\\+", "_",nove_jmeno)
+    
+    writeRaster(rdiff, filename = paste0('~/Plocha/Data_CHMU/PRECIP/aladin_unsum/',temp[[i]],'/',nove_jmeno), overwrite=TRUE)
+  }   
+}
+}
+### 6h
+for (i in seq_along(temp)){
+  setwd(file.path("~/Plocha/Data_CHMU/PRECIP/aladin/", temp[[i]]))
+  dirdat=list.files(pattern="06.nc")
+  for (m in seq_along(dirdat)) { 
+  
+  r=raster(dirdat[m], varname="A_PCP_GDS3_HTGL")
+  datum <- substr(dirdat[m], start = 16,stop = nchar(dirdat[m])-6)
+  nove_jmeno <- paste0("SURFPREC_TOTAL_", datum, "_06h.nc")
 
   
+  writeRaster(r, filename = paste0('~/Plocha/Data_CHMU/PRECIP/aladin_unsum/',temp[[i]],'/',nove_jmeno), overwrite=TRUE)
+} 
+}
+
+
 
