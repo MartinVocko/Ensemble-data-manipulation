@@ -287,5 +287,31 @@ for (i in seq_along(temp)){
 } 
 }
 
+##### Merge CZ RAD ######
+
+setwd("~/Plocha/Data_CHMU/merge_ascii")
+temp=dir()
+  for (i in seq_along(temp)){ 
+    setwd(file.path("~/Plocha/Data_CHMU/merge_ascii/",temp[[i]]))
+    dirdat=list.files()
+    
+    for (j in seq_along(dirdat)){ 
+      r=raster(dirdat[[j]])
+      name=names(r)
+      newname=paste0(name, ".nc")
+      writeRaster(r, filename = paste0("~/Plocha/Data_CHMU/merge/", temp[[i]], '/', newname))
+    
+    }
+  }
 
 
+
+setwd("~/Plocha/Data_CHMU/merge")
+temp=dir()
+for (i in seq_along(temp)){ 
+  setwd(file.path("~/Plocha/Data_CHMU/merge/",temp[[i]]))
+  dirdat=list.files(patern= )
+  
+    for j in 
+  
+}  
