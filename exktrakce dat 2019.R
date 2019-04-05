@@ -308,10 +308,28 @@ temp=dir()
 
 setwd("~/Plocha/Data_CHMU/merge")
 temp=dir()
+sumtime=c("_6h.nc", "_12h.nc","_18h.nc", "_24h.nc")
 for (i in seq_along(temp)){ 
   setwd(file.path("~/Plocha/Data_CHMU/merge/",temp[[i]]))
-  dirdat=list.files(patern= )
-  
-    for j in 
-  
-}  
+  dirdat=list.files()
+  datum <- substr(dirdat, start = 16,stop = nchar(dirdat[m])-11)      
+  datum <- unique.POSIXlt(datum)
+   
+         
+          for (m in seq_along(datum) ){ 
+            hours=list.files(pattern=(datum[[m]]))
+            dayprc= stack(hours)
+            indices<-rep(1:4, each=6)
+            sum6<-stackApply(dayprc, indices, fun = sum)
+            
+          #  x=sum(dayprc[[13:18]])
+            
+                for (s in seq_along(sumtime)){
+                for (t in 1:4){ 
+            
+            writeRaster(sum6[[t]], filename = paste0("~/Plocha/Data_CHMU/merge_6h/", temp[[i]], '/', datum[[m]], sumtime[[s]]), overwrite=TRUE)
+            
+                }
+          }  
+}
+}
