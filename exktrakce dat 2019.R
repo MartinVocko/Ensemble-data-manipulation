@@ -14,8 +14,9 @@ library(ggplot2)
 setwd("~/Plocha/Data_CHMU/GIS")
 vp <- readOGR('basins.shp', 'basins')
 vp@proj4string
-vp = spTrans(vp, from = 'krov', to = 'wgs')
+vp = spTrans(vp, from = 'krov', to = 'wgs2')
 plot(vp)
+plot(vp, add=TRUE)
 
 
 
