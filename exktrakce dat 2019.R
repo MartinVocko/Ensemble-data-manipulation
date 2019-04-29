@@ -10,6 +10,7 @@ library(chron)
 library(reshape2)
 library(plyr)
 library(ggplot2)
+library(svMisc)
 
 setwd("~/Plocha/Data_CHMU/GIS")
 vp <- readOGR('basins.shp', 'basins')
@@ -204,6 +205,12 @@ for(i in seq_along(temp)){    #nasmeruje do slozky s daty
 
 
 ######### LAEF exktrakce #################################
+setwd("~/Plocha/Data_CHMU/Aladin16_unsum/2015")
+filez <- list.files()
+file.rename(from=filez, to=sub(pattern="LAEF4hydro", replacement="laef", filez))
+
+#________________________________________________________________
+
 setwd("~/Plocha/Data_CHMU/Aladin16_unsum")
  
 TABLE= data.table()
@@ -218,60 +225,45 @@ vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 for(i in seq_along(temp)){
   setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum", temp[[i]])) #nastavit directory i   "~/Plocha/COSMO/"
   dirdat=list.files(pattern=".nc")   #nacte jmena souboru .grd ve vybrane slozce
-  pf=as.data.frame(sapply(temp[[i]], strsplit,'_')) ######################################### prcat filu
-  time = as.POSIXct(sapply(strsplit(temp[[i]], '_'), function(x)x[1]), format='%Y%m%d%H')
-  # progress(i,progress.bar = TRUE, max.value = length(temp))
-  cat(i, '\n')
+ progress(i)
   
   for (p in seq_along(vp$OBJECTID_1)){ 
     vps=vp[vp$OBJECTID_1== p,]  #nastavit měnění polygonu do cyklu
     
         for(j in 1: length (dirdat)){ 
             TAB = data.table(ORIGIN=1) 
-            time <- substr(dirdat[10], start = 15,stop = 24)
+            time <- substr(dirdat[j], start = 9,stop = 18)
             TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
-            ah = as.double(substring(dirdat[j],26,27))
+            ah = as.double(substring(dirdat[j],20,21))
             TAB[,AHEAD:= ah]
             TAB[,TIME:=ORIGIN+(AHEAD*3600)]
             TAB[,ID:= vps$PROFIL]
-            
-            cfpf=substr(dirdat[j], start = 12, stop = 13)
+            TAB2=TAB
+            cfpf=substr(dirdat[j], start = 6, stop = 7)
             
             if (cfpf=="cf"){
               
               ex=extract(raster(dirdat[j]),vps,fun=mean,df=TRUE)
-              TAB[,MODEL:="LAEF_CF"]
-              }
-            
-            else { 
+              TAB[,MODEL:="LAEF_CF"] 
+              TAB[,value:=ex[2]*1000]
+              TABLE=rbind(TABLE, TAB)
+              } else { 
               
                 for(e in 1:16){ 
-                  
+                 # TAB2=data.table()
                   b = brick(dirdat[j])
                   ex=extract(b[[e]],vps,fun=mean,df=TRUE) 
                   ensname=paste0("LAEF_",as.character(e))
-                  TAB$MODEL <- NULL
-                  TAB[,MODEL:= as.character(ensname)] #neuklada name ale cislo 1 ##################
-                  TAB[,value:=ex[2]]
+                  TAB16=data.table(MODEL=1)
+                  TAB16[,MODEL:= as.character(ensname)] #neuklada name ale cislo 1 ##################
+                  TAB16[,value:=ex[2]*1000]
+                  TAB16=cbind(TAB, TAB16)
+                  TABLE=rbind(TABLE, TAB16)
                 }
+             
             }
     
-                 
-    
-   
-   
- 
-    #separace AHEAD hodnoty z nazvu predpovedi
-    
-  
-    
-   
-    
-    tab[, EID:= pf[2,]] #prirazeni cisla clenu ensemblu pf
-    
-    #TAB[[length(TAB)+1]] = tab[, .(OBL, EID, SID = 'PF', ORIGIN,AHEAD,TIME, PR)]
-    
-    TABLE=rbind(TABLE,TAB)
+    #TABLE=rbind(TABLE,TAB)
   
   }
   }
