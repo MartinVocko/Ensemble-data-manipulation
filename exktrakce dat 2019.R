@@ -211,11 +211,10 @@ file.rename(from=filez, to=sub(pattern="LAEF4hydro", replacement="laef", filez))
 
 #________________________________________________________________
 
-setwd("~/Plocha/Data_CHMU/Aladin16_unsum") #pro Vojtu musim nechat
+setwd("~/Plocha/Data_CHMU/Aladin16_unsum") #pro Vojtu musim nechat, je to dobrej kluk
  
 TABLE= data.table()
 tablist= list()
-zz=0
 
 temp <- dir()
 setwd("~/Plocha/Data_CHMU/GIS")
@@ -223,9 +222,12 @@ vp <- readOGR('basins.shp', 'basins')
 vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
 
+
 for(i in seq_along(temp)){
   setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum/", temp[[i]])) 
   dirdat=list.files(pattern=".nc")  
+  TAB_list <- list()
+  TAB16_list <- list()
 
   
   for (p in seq_along(vp$OBJECTID_1)){ 
@@ -249,35 +251,40 @@ for(i in seq_along(temp)){
             
             if (cfpf=="cf"){
               
-              ex=extract(b,vps,fun=mean,df=TRUE)*1000 #extrakce plus prevod jednotek na mm
+              ex <- data.frame(value=t((extract(b,vps,fun=mean,df=TRUE)*1000)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
                                                      #df=TRUE vytvari datatable
-              TAB[,MODEL:="LAEF_CF"] 
-              tablist[j]<-
-              TABLE=rbind(TABLE, TAB) # tuto pryc
-              
+              ex$MODEL = "LAEF_CF" 
+              TAB=cbind(TAB, ex)
+              TAB_list[[j]]<-TAB
+             
               } else {
                  
                 
-                  ex=extract(b,vps,fun=mean,df=TRUE)*1000 #extrakce plus prevod jednotek na mm 
-                                                          #df=TRUE vytvari datatable
-                  TAB16=data.table(MODEL=1)
-                  TAB16=cbind(TAB, TAB16)
-                  tablist=list()
-                  tablist <- lapply(TABB, function(x) {zz=zz+1 ; append(x,ex[zz])}) # pridava spatne nazev modelu a value
-                
+                  ex <- data.frame(value=t((extract(b,vps,fun=mean,df=TRUE)*1000)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm 
                   
-                  TABLE=rbind(TABLE, TAB16) # tuto pryc
+                  ex$MODEL <- paste0("LAEF_", c(1:nrow(ex)))                                        #df=TRUE vytvari datatable
+                  TAB16 <- cbind(TAB, ex)
+                 TAB16_list[[j]] <- TAB16
+                
                 }
-             
+            print(paste0("VYSTUP ", j, " POVODI ", p, " ROK ", i))  
         }
     
-    print(c(j,p,i))
+   
     
-    TABLE=do.call(rbind,tablist)
+   
   
   }
+ 
+  TABLE16 = do.call(rbind,TAB16_list) 
+  TABLE = do.call(rbind,TAB_list) 
+  
+  FIN = rbind(TABLE, TABLE16)
+  saveRDS(object = FIN, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/LAEF_", i, ".rds"))
+  rm(FIN, TABLE16, TABLE)
+  gc()
+  
   }
-}
 
 
 
