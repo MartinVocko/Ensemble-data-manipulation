@@ -219,11 +219,12 @@ tablist= list()
 temp <- dir()
 setwd("~/Plocha/Data_CHMU/GIS")
 vp <- readOGR('basins.shp', 'basins')
+source("/home/vokounm/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extrakce.R")
 vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
 
 
-for(i in seq_along(temp)){
+for(i in 7:length(temp)){
   setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum/", temp[[i]])) 
   dirdat=list.files(pattern=".nc")  
   TAB_list <- list()
@@ -392,6 +393,90 @@ for (i in seq_along(temp)){
   writeRaster(r, filename = paste0('~/Plocha/Data_CHMU/PRECIP/aladin_unsum/',temp[[i]],'/',nove_jmeno), overwrite=TRUE)
 } 
 }
+
+
+
+##### ALADIN extrakce ######
+setwd("~/Plocha/Data_CHMU/PRECIP/aladin_unsum")
+temp=dir()
+
+
+for (i in seq_along(temp)){
+  setwd(file.path("~/Plocha/Data_CHMU/PRECIP/aladin_unsum/", temp[[i]])) 
+   files=grep(list.files(path=file.path("~/Plocha/Data_CHMU/PRECIP/aladin_unsum/", temp[[i]])), pattern='06h.nc', inv=T, value=T)
+   file.rename(from=files, to=sub(pattern=".nc", replacement="h.nc", files))
+  
+  }
+
+
+
+#//////////////////////////////////////////////////////////////////////////////////////////////////
+
+setwd("~/Plocha/Data_CHMU/Aladin_4ext_unsum") 
+
+TABLE= data.table()
+tablist= list()
+
+dirdat <- dir()
+setwd("~/Plocha/Data_CHMU/GIS")
+vp <- readOGR('basins.shp', 'basins')
+source("/home/vokounm/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extrakce.R")
+vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
+
+
+
+
+  TAB_list <- list()
+  TAB16_list <- list()
+  
+  
+  for (p in seq_along(vp$OBJECTID_1)){ 
+    vps=vp[vp$OBJECTID_1== p,]  
+    
+    
+    for(j in 1: length (dirdat)){ 
+      TAB = data.table(ORIGIN=1) 
+      time <- substr(dirdat[j], start = 16,stop = 25)
+      TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
+      ah = as.double(substring(dirdat[j],27,28))
+      TAB[,AHEAD:= ah]
+      TAB[,TIME:=ORIGIN+(AHEAD*3600)]
+      TAB[,ID:= vps$PROFIL]
+      
+      TABB<-apply(TAB, 1, as.list)
+      
+     
+      b = brick(dirdat[j])
+      bb <- extent(11.682, 19.508, 47.989, 51.508)
+      extent(b) <- bb
+      b <- setExtent(b, bb, keepres=TRUE)
+      
+    ex <- data.frame(value=t(extract(b,vps,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
+        #df=TRUE vytvari datatable
+        ex$MODEL = "ALADIN-CZ" 
+        TAB=cbind(TAB, ex)
+        TAB_list[[j]]<-TAB
+     
+      print(paste0("VYSTUP ", j, " POVODI ", p))  
+    }
+    
+    
+    
+    
+    
+  }
+  
+  #TABLE16 = do.call(rbind,TAB16_list) 
+  TABLE = do.call(rbind,TAB_list) 
+  
+ # FIN = rbind(TABLE, TABLE16)
+  saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
+  rm(FIN, TABLE16, TABLE)
+  gc()
+  
+
+
+
 
 ##### Merge CZ RAD ######
 
