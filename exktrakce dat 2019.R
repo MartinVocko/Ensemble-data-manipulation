@@ -412,7 +412,7 @@ for (i in seq_along(temp)){
 
 #//////////////////////////////////////////////////////////////////////////////////////////////////
 
-setwd("~/Plocha/Data_CHMU/Aladin_4ext_unsum") 
+ 
 
 TABLE= data.table()
 tablist= list()
@@ -424,73 +424,68 @@ source("/home/vokounm/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extr
 vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
 
+setwd("~/Plocha/Data_CHMU/Aladin_4ext_unsum")
+
+TAB_list <- list()
+TAB16_list <- list()
 
 
-  TAB_list <- list()
-  TAB16_list <- list()
+for (p in seq_along(vp$OBJECTID_1)){ 
+  vps=vp[vp$OBJECTID_1== p,]  
   
   
-  for (p in seq_along(vp$OBJECTID_1)){ 
-    vps=vp[vp$OBJECTID_1== p,]  
+  for(j in 1: length (dirdat)){ 
+    TAB = data.table(ORIGIN=1) 
+    time <- substr(dirdat[j], start = 16,stop = 25)
+    TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
+    ah = as.double(substring(dirdat[j],27,28))
+    TAB[,AHEAD:= ah]
+    TAB[,TIME:=ORIGIN+(AHEAD*3600)]
+    TAB[,ID:= vps$PROFIL]
+    
+    TABB<-apply(TAB, 1, as.list)
     
     
-    for(j in 1: length (dirdat)){ 
-      TAB = data.table(ORIGIN=1) 
-      time <- substr(dirdat[j], start = 16,stop = 25)
-      TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
-      ah = as.double(substring(dirdat[j],27,28))
-      TAB[,AHEAD:= ah]
-      TAB[,TIME:=ORIGIN+(AHEAD*3600)]
-      TAB[,ID:= vps$PROFIL]
-      
-      TABB<-apply(TAB, 1, as.list)
-      
-     
-      b = brick(dirdat[j])
-      bb <- extent(11.682, 19.508, 47.989, 51.508)
-      extent(b) <- bb
-      b <- setExtent(b, bb, keepres=TRUE)
-      
+    b = brick(dirdat[j])
+    bb <- extent(11.682, 19.508, 47.989, 51.508)
+    extent(b) <- bb
+    b <- setExtent(b, bb, keepres=TRUE)
+    
     ex <- data.frame(value=t(extract(b,vps,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
-        #df=TRUE vytvari datatable
-        ex$MODEL = "ALADIN-CZ" 
-        TAB=cbind(TAB, ex)
-        TAB_list[[j]]<-TAB
-     
-      print(paste0("VYSTUP ", j, " POVODI ", p))  
-    }
+    #df=TRUE vytvari datatable
+    ex$MODEL = "ALADIN-CZ" 
+    TAB=cbind(TAB, ex)
+    TAB_list[[j]]<-TAB
     
-    
-    
-    
-    
+    print(paste0("VYSTUP ", j, " POVODI ", p))  
   }
   
-  #TABLE16 = do.call(rbind,TAB16_list) 
-  TABLE = do.call(rbind,TAB_list) 
   
- # FIN = rbind(TABLE, TABLE16)
-  saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
-  rm(FIN, TABLE16, TABLE)
-  gc()
   
+  
+  
+}
 
+#TABLE16 = do.call(rbind,TAB16_list) 
+TABLE = do.call(rbind,TAB_list) 
 
+# FIN = rbind(TABLE, TABLE16)
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
 
 
 ##### Merge CZ RAD ######
 
-setwd("~/Plocha/Data_CHMU/merge_ascii")
+setwd("~/Plocha/Data_CHMU/merge_ascii/2016")
 temp=dir()
-  for (i in seq_along(temp)){ 
-    setwd(file.path("~/Plocha/Data_CHMU/merge_ascii/",temp[[i]]))
+  for (i in 223:length(temp)){ 
+    setwd(file.path("~/Plocha/Data_CHMU/merge_ascii/2016",temp[[i]]))
     dirdat=list.files()
     
     for (j in seq_along(dirdat)){ 
       r=raster(dirdat[[j]])
       name=names(r)
       newname=paste0(name, ".nc")
-      writeRaster(r, filename = paste0("~/Plocha/Data_CHMU/merge/", temp[[i]], '/', newname))
+      writeRaster(r, filename = paste0("~/Plocha/Data_CHMU/merge/2016/",newname),overwrite=TRUE)
     
     }
   }
@@ -503,7 +498,7 @@ sumtime=c("_6h.nc", "_12h.nc","_18h.nc", "_24h.nc")
 for (i in seq_along(temp)){ 
   setwd(file.path("~/Plocha/Data_CHMU/merge/",temp[[i]]))
   dirdat=list.files()
-  datum <- substr(dirdat, start = 16,stop = nchar(dirdat[m])-11)      
+  datum <- substr(dirdat, start = 16,stop = nchar(dirdat[1])-11)      
   datum <- unique.POSIXlt(datum)
    
          
