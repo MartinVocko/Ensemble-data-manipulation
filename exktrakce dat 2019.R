@@ -543,3 +543,48 @@ plot(r,add=TRUE)
 plot(vps,add=TRUE)
 
 ex=extract(r,vps,fun=mean,df=TRUE)
+
+#extrakce v cyklu    ######### DOLADIT NA MERGE 
+TAB_list <- list()
+TAB16_list <- list()
+
+
+for (p in seq_along(vp$OBJECTID_1)){ 
+  vps=vp[vp$OBJECTID_1== p,]  
+  
+  
+  for(j in 1: length (dirdat)){ 
+    TAB = data.table(ORIGIN=1) 
+    time <- substr(dirdat[j], start = 16,stop = 25)
+    TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
+    ah = as.double(substring(dirdat[j],27,28))
+    TAB[,AHEAD:= ah]
+    TAB[,TIME:=ORIGIN+(AHEAD*3600)]
+    TAB[,ID:= vps$PROFIL]
+    
+    TABB<-apply(TAB, 1, as.list)
+    
+    
+    b = brick(dirdat[j])
+  
+    ex <- data.frame(value=t(extract(b,vps,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
+    #df=TRUE vytvari datatable
+    ex$MODEL = "PRECIP" 
+    TAB=cbind(TAB, ex)
+    TAB_list[[j]]<-TAB
+    
+    print(paste0("VYSTUP ", j, " POVODI ", p))  
+  }
+  
+  
+  
+  
+  
+}
+
+#TABLE16 = do.call(rbind,TAB16_list) 
+TABLE = do.call(rbind,TAB_list) 
+
+# FIN = rbind(TABLE, TABLE16)
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
+
