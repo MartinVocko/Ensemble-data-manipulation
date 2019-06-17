@@ -466,10 +466,9 @@ for (p in seq_along(vp$OBJECTID_1)){
   
 }
 
-#TABLE16 = do.call(rbind,TAB16_list) 
+
 TABLE = do.call(rbind,TAB_list) 
 
-# FIN = rbind(TABLE, TABLE16)
 saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
 
 
@@ -544,13 +543,19 @@ plot(vps,add=TRUE)
 
 ex=extract(r,vps,fun=mean,df=TRUE)
 
-#extrakce v cyklu    ######### DOLADIT NA MERGE 
+#extrakce v cyklu pro merge od roku 2015   ######### DOLADIT NA MERGE 
+
+
+temp <- dir()
+for(i in 7:length(temp)){
+  setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum/", temp[[i]])) 
+  dirdat=list.files(pattern=".nc")  
 TAB_list <- list()
 TAB16_list <- list()
 
 
 for (p in seq_along(vp$OBJECTID_1)){ 
-  vps=vp[vp$OBJECTID_1== p,]  
+  vps=vp2[vp2$OBJECTID_1== p,]  
   
   
   for(j in 1: length (dirdat)){ 
@@ -577,7 +582,7 @@ for (p in seq_along(vp$OBJECTID_1)){
   }
   
   
-  
+} 
   
   
 }
@@ -588,3 +593,50 @@ TABLE = do.call(rbind,TAB_list)
 # FIN = rbind(TABLE, TABLE16)
 saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
 
+
+
+#### cyklus pro merge data v letech 2011 - 2014
+
+setwd("~/Plocha/Data_CHMU/CZRAD_date")
+temp=dir()
+TAB=data.frame()
+TABLE=data.frame()
+
+for ( i in 1:(length(temp)-2)){
+  
+  b=brick(temp[i])
+  b@crs = CRS('+init=epsg:32633')
+  
+  
+  for (p in seq_along(vp$OBJECTID_1)){ 
+    vps=vp2[vp2$OBJECTID_1== p,]         #vp2 nacist ve sjednoceni projekce
+  
+      ex=as.data.table(extract(b,vps,fun=mean,df=TRUE) )
+      ex=melt(ex)
+      ex= ex[2:length(ex$variable),]
+      time <- substr(names(b), start = 2, stop=12)
+      time=paste0(time,"06")
+      time=gsub("\\.2506","12",time)
+      time=gsub("\\.506","18",time)
+      time=gsub("\\.7506","24",time)
+      time=as.POSIXct(time, format = '%Y%m%d%H', tz="UTC")
+      startime=substr(b@title, start=20, stop=27)
+      startime=paste0(startime,"00")
+      startime=as.POSIXct(startime, format = '%Y%m%d%H', tz="UTC")
+      t=as.numeric(difftime(startime,time[1], units=("hours")))
+      time=time+((t[1]+6)*3600)                               #+6h jelikoz nacteny startime je od 00h a ne 06h
+      ex[, TIME:=time]
+      
+      
+      ex$variable=NULL
+      ex$MODEL="RAINFALL"
+     
+      ex[,ID:= vps$PROFIL]
+      
+      TAB=cbind(TAB, ex)
+      
+  }    
+  
+  TABLE=cbind(TABLE,TAB)
+  
+  }
