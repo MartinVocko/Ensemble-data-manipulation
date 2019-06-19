@@ -534,6 +534,7 @@ cr2=spTransform(cr, CRS('+init=epsg:32633'))
 setwd("~/Plocha/Data_CHMU/merge_6h/2018")
 r=raster('20180921_24h.nc')
 r@crs = CRS('+init=epsg:32633')
+
 vp2 = spTransform(vp, CRS('+init=epsg:32633'))
 
 vps=vp2[vp2$OBJECTID_1=='1',]
@@ -545,13 +546,15 @@ ex=extract(r,vps,fun=mean,df=TRUE)
 
 #extrakce v cyklu pro merge od roku 2015   ######### DOLADIT NA MERGE 
 
-
+setwd("~/Plocha/Data_CHMU/merge_6h")
 temp <- dir()
-for(i in 7:length(temp)){
-  setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum/", temp[[i]])) 
-  dirdat=list.files(pattern=".nc")  
 TAB_list <- list()
-TAB16_list <- list()
+TAB_list2 <- list()
+
+for(i in 1:length(temp)){
+  setwd(file.path("~/Plocha/Data_CHMU/merge_6h/", temp[[i]])) 
+  dirdat=list.files(pattern=".nc")  
+
 
 
 for (p in seq_along(vp$OBJECTID_1)){ 
@@ -559,12 +562,10 @@ for (p in seq_along(vp$OBJECTID_1)){
   
   
   for(j in 1: length (dirdat)){ 
-    TAB = data.table(ORIGIN=1) 
-    time <- substr(dirdat[j], start = 16,stop = 25)
-    TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
-    ah = as.double(substring(dirdat[j],27,28))
-    TAB[,AHEAD:= ah]
-    TAB[,TIME:=ORIGIN+(AHEAD*3600)]
+    TAB = data.table(TIME=1) 
+    time <- substr(dirdat[j], start = 1,stop = 11)
+    time=gsub("\\_","",time)
+    TAB[, TIME:=as.POSIXct(time, format = '%Y%m%d%H')]
     TAB[,ID:= vps$PROFIL]
     
     TABB<-apply(TAB, 1, as.list)
@@ -573,25 +574,26 @@ for (p in seq_along(vp$OBJECTID_1)){
     b = brick(dirdat[j])
   
     ex <- data.frame(value=t(extract(b,vps,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
-    #df=TRUE vytvari datatable
-    ex$MODEL = "PRECIP" 
+ 
+    ex$MODEL = "RAINFALL" 
     TAB=cbind(TAB, ex)
+    #TABsum=rbind(TABsum, TAB)
     TAB_list[[j]]<-TAB
     
-    print(paste0("VYSTUP ", j, " POVODI ", p))  
+    print(paste0("VYSTUP ", j, " POVODI ", p, " ROK ", i))  
   }
-  
+  TABLE = do.call(rbind,TAB_list) 
+  TAB_list2[[p]]<-TABLE
+
+
+
   
 } 
-  
-  
+  TABLE2 = do.call(rbind,TAB_list2) 
+  saveRDS(object = TABLE2, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/merge", temp[[i]],".rds"))
 }
 
-#TABLE16 = do.call(rbind,TAB16_list) 
-TABLE = do.call(rbind,TAB_list) 
 
-# FIN = rbind(TABLE, TABLE16)
-saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
 
 
 
@@ -633,10 +635,12 @@ for ( i in 1:(length(temp)-2)){
      
       ex[,ID:= vps$PROFIL]
       
-      TAB=cbind(TAB, ex)
+      TAB=rbind(TAB, ex)
       
   }    
   
-  TABLE=cbind(TABLE,TAB)
+  TABLE=rbind(TABLE,TAB)
   
   }
+
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/merge2011-2014.rds"))
