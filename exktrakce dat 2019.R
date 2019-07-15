@@ -24,28 +24,6 @@ cr=readOGR('hrcr.shp')
 cr=spTrans(cr, from= 'krov', to= 'wgs2')
 
 
-list.files("~/Plocha/Data_CHMU/PRECIP/laef/2015", full.names = T)
-#overeni souradnicovych systemu
-r=raster("/home/vokounm/Plocha/Data_CHMU/PRECIP/laef/2015/laef_pf_2015102512.nc")
-projection(r) <- CRS('+proj=ob_tran +o_proj=longlat +o_lon_p=-170 +o_lat_p=40 +lon_0=180-m 57.2957795130823')
-plot(r)
-newproj<-'+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
-pokus <- projectRaster(from = r,
-                       crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-plot(pokus)
-rw=raster('LAEF4hydro_pf_2012040100.nc')
-pr3 <- projectExtent(rw, newproj)
-#res(pr3) <- 200000
-pokus<-projectRaster(r,pr3)
-
-file<-list.files("/media/martin/DELL Drive/COSMO/2012070100_pf01_cleps_ml", pattern="H12070106TOT")
-rwgs = spTrans(r, from = 'rot', to = 'wgs')
-ras=brick(file)
-names(r$dim)
-plot(r)
-plot(vp2, add=TRUE,frame.plot=FALSE)
-crs(r)
-rr=spTrans(r,from=NA, to = "wgs")
 
 
 setwd("~/Plocha/Data_CHMU/PRECIP/laef/2015")
@@ -644,3 +622,83 @@ for ( i in 1:(length(temp)-2)){
   }
 
 saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/merge2011-2014.rds"))
+
+
+ ### COSMO extrakce #####
+
+
+setwd("~/Plocha/Data_CHMU/GIS")
+vp <- readOGR('basins.shp', 'basins')
+source("/home/vokounm/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extrakce.R")
+vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')  #spatna prjekce
+
+
+setwd("~/Plocha/Data_CHMU/COSMO_LEPS")
+TABLE= data.table()
+tablist= list()
+
+temp <- dir()
+
+for (i in length(temp)){ 
+  setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]]))
+  dirdat=dir()
+  
+  for (k in seqalong(dirdat)){  
+    setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]]))
+    dirdat2=dir()
+
+for (p in seq_along(vp$OBJECTID_1)){ 
+  vps=vp[vp$OBJECTID_1== p,]  
+  
+  
+  for(j in 1: length (dirdat2)){ 
+    setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]], dirdat2[[j]]))
+    agr=dir(pattern="PREC6h")  
+    
+    
+    for(l in 1:length(agr)){ 
+    
+    
+    TAB = data.table(ORIGIN=1) 
+    time <- substr(dirdat2[j], start = 1,stop = 10)
+    TAB[, ORIGIN:=as.POSIXct(time, format = '%Y%m%d%H')]
+    ah = 6*l
+    TAB[,AHEAD:= ah]
+    TAB[,TIME:=ORIGIN+(AHEAD*3600)]
+   # TAB[,ID:= vps$PROFIL]
+    
+    TABB<-apply(TAB, 1, as.list)
+    
+    
+    b = brick(agr[l])
+    #bb <- extent(11.682, 19.508, 47.989, 51.508)
+   # bb<-extent(-1.625, 4.0625 , 0.1875, 4)
+    bb<-extent(10.8401, 19.9304, 47.9968, 51.3391)
+  #  bb<-extent(0.5625, 6.1875 , -2.0000 ,1.7500 )
+    extent(b) <- bb
+    b <- setExtent(b, bb, keepres=TRUE)
+    profiles=vp$PROFIL
+    ex <- data.frame(value=t(extract(b,vp,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
+    #df=TRUE vytvari datatable
+    names(ex) <- vp$PROFIL
+    ex$MODEL <- paste0("COSMO_", substr(dirdat2[j], start = 14,stop = 15))    
+    TAB=cbind(TAB, ex)
+    TABmelt=melt(TAB, id=c(1:3,12))
+    TAB_list[[j]]<-TAB
+    
+    print(paste0("VYSTUP ", j, " POVODI ", p))  
+  }
+  
+  }
+} 
+  
+  }  
+}
+
+
+TABLE = do.call(rbind,TAB_list) 
+
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
+
+
+
