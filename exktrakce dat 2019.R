@@ -405,7 +405,6 @@ vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 setwd("~/Plocha/Data_CHMU/Aladin_4ext_unsum")
 
 TAB_list <- list()
-TAB16_list <- list()
 
 
 for (p in seq_along(vp$OBJECTID_1)){ 
@@ -635,7 +634,7 @@ vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')  #spatna prjekce
 
 setwd("~/Plocha/Data_CHMU/COSMO_LEPS")
 TABLE= data.table()
-tablist= list()
+TAB_list= list()
 
 temp <- dir()
 
@@ -643,21 +642,16 @@ for (i in length(temp)){
   setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]]))
   dirdat=dir()
   
-  for (k in seqalong(dirdat)){  
+  for (k in seq_along(dirdat)){  
     setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]]))
     dirdat2=dir()
 
-for (p in seq_along(vp$OBJECTID_1)){ 
-  vps=vp[vp$OBJECTID_1== p,]  
-  
-  
-  for(j in 1: length (dirdat2)){ 
+     for(j in 1: length (dirdat2)){ 
     setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]], dirdat2[[j]]))
     agr=dir(pattern="PREC6h")  
     
-    
-    for(l in 1:length(agr)){ 
-    
+         for(l in 1:length(agr)){ 
+       
     
     TAB = data.table(ORIGIN=1) 
     time <- substr(dirdat2[j], start = 1,stop = 10)
@@ -665,40 +659,43 @@ for (p in seq_along(vp$OBJECTID_1)){
     ah = 6*l
     TAB[,AHEAD:= ah]
     TAB[,TIME:=ORIGIN+(AHEAD*3600)]
-   # TAB[,ID:= vps$PROFIL]
-    
     TABB<-apply(TAB, 1, as.list)
     
     
     b = brick(agr[l])
     #bb <- extent(11.682, 19.508, 47.989, 51.508)
-   # bb<-extent(-1.625, 4.0625 , 0.1875, 4)
+    #bb<-extent(-1.625, 4.0625 , 0.1875, 4)
     bb<-extent(10.8401, 19.9304, 47.9968, 51.3391)
-  #  bb<-extent(0.5625, 6.1875 , -2.0000 ,1.7500 )
+    #bb<-extent(0.5625, 6.1875 , -2.0000 ,1.7500 )
     extent(b) <- bb
     b <- setExtent(b, bb, keepres=TRUE)
+    
     profiles=vp$PROFIL
     ex <- data.frame(value=t(extract(b,vp,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
-    #df=TRUE vytvari datatable
     names(ex) <- vp$PROFIL
     ex$MODEL <- paste0("COSMO_", substr(dirdat2[j], start = 14,stop = 15))    
     TAB=cbind(TAB, ex)
     TABmelt=melt(TAB, id=c(1:3,12))
-    TAB_list[[j]]<-TAB
+    names(TABmelt)[5]<-"ID"
+    TAB_list[[l]]<-TABmelt
     
-    print(paste0("VYSTUP ", j, " POVODI ", p))  
+    
+    
+   print(paste0("ROK ", i, " TERMIN ", k, " CLEN " , j, " 6hSUMA " , l))  
   }
   
   }
 } 
   
   }  
-}
+
 
 
 TABLE = do.call(rbind,TAB_list) 
 
-saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/COSMO_LEPS.rds"))
+
+
 
 
 
