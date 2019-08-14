@@ -11,6 +11,7 @@ library(reshape2)
 library(plyr)
 library(ggplot2)
 library(svMisc)
+#library(tidyverse)
 
 setwd("~/Plocha/Data_CHMU/GIS")
 vp <- readOGR('basins.shp', 'basins')
@@ -176,7 +177,7 @@ for(i in seq_along(temp)){    #nasmeruje do slozky s daty
       }
       
       
-      writeRaster(rdiff, filename = paste0('~/Plocha/Data_CHMU/PRECIP/laef_unsum/',temp[[i]],'/',nove_jmeno), overwrite=TRUE) #ulozit odecteny raster do jine slozky a pridat do nazvu leadtime
+      writeRaster(r1, filename = paste0('~/Plocha/Data_CHMU/PRECIP/laef_unsum/',temp[[i]],'/',nove_jmeno), overwrite=TRUE) #ulozit odecteny raster do jine slozky a pridat do nazvu leadtime
       
     }  
   }
@@ -202,13 +203,13 @@ vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
 
 
-for(i in 7:length(temp)){
+for(i in 1:length(temp)){
   setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum/", temp[[i]])) 
   dirdat=list.files(pattern=".nc")  
   TAB_list <- list()
   TAB16_list <- list()
 
-  
+  cyklus <- 1
   for (p in seq_along(vp$OBJECTID_1)){ 
     vps=vp[vp$OBJECTID_1== p,]  
     
@@ -234,7 +235,7 @@ for(i in 7:length(temp)){
                                                      #df=TRUE vytvari datatable
               ex$MODEL = "LAEF_CF" 
               TAB=cbind(TAB, ex)
-              TAB_list[[j]]<-TAB
+              TAB_list[[cyklus]] <- TAB
              
               } else {
                  
@@ -243,10 +244,11 @@ for(i in 7:length(temp)){
                   
                   ex$MODEL <- paste0("LAEF_", c(1:nrow(ex)))                                        #df=TRUE vytvari datatable
                   TAB16 <- cbind(TAB, ex)
-                 TAB16_list[[j]] <- TAB16
+                 TAB16_list[[cyklus]] <- TAB16
                 
                 }
-            print(paste0("VYSTUP ", j, " POVODI ", p, " ROK ", i))  
+            print(paste0("VYSTUP ", j, " POVODI ", p, " ROK ", i))
+            cyklus <- cyklus + 1
         }
     
    
@@ -393,9 +395,10 @@ for (i in seq_along(temp)){
  
 
 TABLE= data.table()
-tablist= list()
+#tablist= list
 
-dirdat <- dir()
+
+
 setwd("~/Plocha/Data_CHMU/GIS")
 vp <- readOGR('basins.shp', 'basins')
 source("/home/vokounm/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extrakce.R")
@@ -403,11 +406,11 @@ vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
 
 setwd("~/Plocha/Data_CHMU/Aladin_4ext_unsum")
-
+dirdat <- dir()
 TAB_list <- list()
 
 
-for (p in seq_along(vp$OBJECTID_1)){ 
+for (p in 7:length(vp$OBJECTID_1)){ 
   vps=vp[vp$OBJECTID_1== p,]  
   
   
@@ -420,7 +423,7 @@ for (p in seq_along(vp$OBJECTID_1)){
     TAB[,TIME:=ORIGIN+(AHEAD*3600)]
     TAB[,ID:= vps$PROFIL]
     
-    TABB<-apply(TAB, 1, as.list)
+   # TABB<-apply(TAB, 1, as.list)
     
     
     b = brick(dirdat[j])
@@ -437,16 +440,16 @@ for (p in seq_along(vp$OBJECTID_1)){
     print(paste0("VYSTUP ", j, " POVODI ", p))  
   }
   
+TABLE = do.call(rbind,TAB_list) 
+
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ_",p,".rds"))  
   
-  
-  
+TAB_list <- list() 
   
 }
 
 
-TABLE = do.call(rbind,TAB_list) 
 
-saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/ALADIN_CZ.rds"))
 
 
 ##### Merge CZ RAD ######
@@ -637,7 +640,7 @@ TABLE= data.table()
 TAB_list= list()
 
 temp <- dir()
-
+cyklus <- 1
 for (i in length(temp)){ 
   setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]]))
   dirdat=dir()
@@ -648,6 +651,8 @@ for (i in length(temp)){
 
      for(j in 1: length (dirdat2)){ 
     setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]], dirdat2[[j]]))
+   # filez <- list.files()
+   # file.rename(from=filez, to=sub(pattern="H", replacement=j, filez))   
     agr=dir(pattern="PREC6h")  
     
          for(l in 1:length(agr)){ 
@@ -659,43 +664,72 @@ for (i in length(temp)){
     ah = 6*l
     TAB[,AHEAD:= ah]
     TAB[,TIME:=ORIGIN+(AHEAD*3600)]
-    TABB<-apply(TAB, 1, as.list)
+    #TABB<-apply(TAB, 1, as.list)
     
     
     b = brick(agr[l])
-    #bb <- extent(11.682, 19.508, 47.989, 51.508)
-    #bb<-extent(-1.625, 4.0625 , 0.1875, 4)
     bb<-extent(10.8401, 19.9304, 47.9968, 51.3391)
-    #bb<-extent(0.5625, 6.1875 , -2.0000 ,1.7500 )
     extent(b) <- bb
     b <- setExtent(b, bb, keepres=TRUE)
     
-    profiles=vp$PROFIL
-    ex <- data.frame(value=t(extract(b,vp,fun=mean,df=TRUE)[1 : nlayers(b)+1])) #extrakce plus prevod jednotek na mm
+    ex <- data.frame(value=t(extract(b,vp,fun=mean,df=TRUE)[1: nlayers(b)+1])) #extrakce plus prevod jednotek na mm
     names(ex) <- vp$PROFIL
     ex$MODEL <- paste0("COSMO_", substr(dirdat2[j], start = 14,stop = 15))    
     TAB=cbind(TAB, ex)
     TABmelt=melt(TAB, id=c(1:3,12))
     names(TABmelt)[5]<-"ID"
-    TAB_list[[l]]<-TABmelt
+    TAB_list[[cyklus]]<-TABmelt
     
     
     
-   print(paste0("ROK ", i, " TERMIN ", k, " CLEN " , j, " 6hSUMA " , l))  
+   print(paste0("ROK ", i, " TERMIN ", k, " CLEN " , j, " 6hSUMA " , l))
+   cyklus <- cyklus + 1
   }
   
   }
-} 
+  } 
+  
+TABLE = do.call(rbind,TAB_list) 
+
+saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/COSMO_LEPS_", i, ".rds"))
+
+rm(TABLE)
+gc()
   
   }  
 
 
+### Spojeni tabulek #####
 
-TABLE = do.call(rbind,TAB_list) 
+setwd("~/Plocha/Data_CHMU/DATA_EXTRAKCE")
 
-saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/COSMO_LEPS.rds"))
+#ALADIN_CZ
+df <- list.files(pattern = "ALADIN") 
+dat_list = lapply(df, function (x) data.table(readRDS(x))) 
+dat = rbindlist(dat_list, fill = TRUE)
+dat=unique(dat)
+saveRDS(dat, "ALADIN_CZ.rds")
+
+#ALADIN_LAEF
+df <- list.files(pattern = "LAEF") 
+dat_list = lapply(df, function (x) data.table(readRDS(x))) 
+dat = rbindlist(dat_list, fill = TRUE)
+dat1=unique(dat)
+
+dc = dcast.data.table(dat1[!MODEL%in% c("LAEF_CF") ], ORIGIN + AHEAD + TIME + ID ~ MODEL, value.var = "value")
+dc = dcast.data.table(dat1, ORIGIN + AHEAD + TIME + ID ~ MODEL, value.var = "value")
+saveRDS(dc, "LAEF.rds")
+
+a=readRDS("ALADIN_CZ.rds")
+b=readRDS("LAEF_1.rds")
+ab=rbind(a,b)
 
 
 
+#Merge
+df <- list.files(pattern = "merge") 
+dat_list = lapply(df, function (x) data.table(readRDS(x))) 
+dat = rbindlist(dat_list, fill = TRUE)
+saveRDS(dat, "merge.rds")
 
 
