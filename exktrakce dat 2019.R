@@ -203,7 +203,7 @@ vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
 
 
-for(i in 1:length(temp)){
+for(i in 7:length(temp)){
   setwd(file.path("~/Plocha/Data_CHMU/Aladin16_unsum/", temp[[i]])) 
   dirdat=list.files(pattern=".nc")  
   TAB_list <- list()
@@ -708,7 +708,8 @@ df <- list.files(pattern = "ALADIN")
 dat_list = lapply(df, function (x) data.table(readRDS(x))) 
 dat = rbindlist(dat_list, fill = TRUE)
 dat=unique(dat)
-saveRDS(dat, "ALADIN_CZ.rds")
+dc = dcast.data.table(dat, ORIGIN + AHEAD + TIME + ID ~ MODEL, value.var = "value")
+saveRDS(dc, "ALADIN_CZ.rds")
 
 #ALADIN_LAEF
 df <- list.files(pattern = "LAEF") 
@@ -720,9 +721,6 @@ dc = dcast.data.table(dat1[!MODEL%in% c("LAEF_CF") ], ORIGIN + AHEAD + TIME + ID
 dc = dcast.data.table(dat1, ORIGIN + AHEAD + TIME + ID ~ MODEL, value.var = "value")
 saveRDS(dc, "LAEF.rds")
 
-a=readRDS("ALADIN_CZ.rds")
-b=readRDS("LAEF_1.rds")
-ab=rbind(a,b)
 
 
 
@@ -730,6 +728,16 @@ ab=rbind(a,b)
 df <- list.files(pattern = "merge") 
 dat_list = lapply(df, function (x) data.table(readRDS(x))) 
 dat = rbindlist(dat_list, fill = TRUE)
+dat1=unique(dat)
+dc = dcast.data.table(dat1, TIME + ID ~ MODEL, value.var = "value")
 saveRDS(dat, "merge.rds")
 
 
+
+a=readRDS("ALADIN_CZ.rds")
+b=readRDS("LAEF.rds")
+
+setkey(a, ID, TIME, ORIGIN, AHEAD)
+setkey(b, ID, TIME, ORIGIN, AHEAD)
+
+verdt=b[a,nomatch=0]
