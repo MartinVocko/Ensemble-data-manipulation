@@ -11,6 +11,7 @@ library(reshape2)
 library(plyr)
 library(ggplot2)
 library(svMisc)
+library(lubridate)
 #library(tidyverse)
 
 setwd("~/Plocha/Data_CHMU/GIS")
@@ -502,7 +503,8 @@ for (i in seq_along(temp)){
 
 ### sjednoceni projekce
 
-setwd("~/Plocha/Data_CHMU/GIS")
+#setwd("~/Plocha/Data_CHMU/GIS")
+setwd("~/Plocha/GIS")
 vp <- readOGR('basins.shp', 'basins')
 vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')
 
@@ -511,7 +513,8 @@ cr=readOGR('hrcr.shp')
 cr=spTrans(cr, from= 'krov', to= 'wgs2')
 cr2=spTransform(cr, CRS('+init=epsg:32633'))
 
-setwd("~/Plocha/Data_CHMU/merge_6h/2018")
+#setwd("~/Plocha/Data_CHMU/merge_6h/2018")
+setwd("/media/martin/DELL Drive/Data_CHMU/merge_6h/2018")
 r=raster('20180921_24h.nc')
 r@crs = CRS('+init=epsg:32633')
 
@@ -526,13 +529,14 @@ ex=extract(r,vps,fun=mean,df=TRUE)
 
 #extrakce v cyklu pro merge od roku 2015   ######### DOLADIT NA MERGE 
 
-setwd("~/Plocha/Data_CHMU/merge_6h")
+#setwd("~/Plocha/Data_CHMU/merge_6h")
+setwd("/media/martin/DELL Drive/Data_CHMU/merge_6h")
 temp <- dir()
 TAB_list <- list()
 TAB_list2 <- list()
 
 for(i in 1:length(temp)){
-  setwd(file.path("~/Plocha/Data_CHMU/merge_6h/", temp[[i]])) 
+  setwd(file.path("/media/martin/DELL Drive/Data_CHMU/merge_6h", temp[[i]])) 
   dirdat=list.files(pattern=".nc")  
 
 
@@ -545,7 +549,7 @@ for (p in seq_along(vp$OBJECTID_1)){
     TAB = data.table(TIME=1) 
     time <- substr(dirdat[j], start = 1,stop = 11)
     time=gsub("\\_","",time)
-    TAB[, TIME:=as.POSIXct(time, format = '%Y%m%d%H')]
+    TAB[, TIME:=as.POSIXct(time, format = '%Y%m%d%H', tz="UTC")]
     TAB[,ID:= vps$PROFIL]
     
     TABB<-apply(TAB, 1, as.list)
@@ -570,7 +574,7 @@ for (p in seq_along(vp$OBJECTID_1)){
   
 } 
   TABLE2 = do.call(rbind,TAB_list2) 
-  saveRDS(object = TABLE2, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/merge", temp[[i]],".rds"))
+  saveRDS(object = TABLE2, file = paste0("~/Plocha/DATA_EXTRAKCE/merge2/merge", temp[[i]],".rds"))
 }
 
 
@@ -629,28 +633,28 @@ saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRA
  ### COSMO extrakce #####
 
 
-setwd("~/Plocha/Data_CHMU/GIS")
+setwd("~/Plocha/GIS")
 vp <- readOGR('basins.shp', 'basins')
-source("/home/vokounm/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extrakce.R")
+source("/home/martin/Plocha/DATA/GITHUB/Ensemble-data-manipulation/spTrans_extrakce.R")
 vp = spTrans(vp, from = 'wgs_pol', to = 'wgs2')  #spatna prjekce
 
 
-setwd("~/Plocha/Data_CHMU/COSMO_LEPS")
+setwd("/run/user/1000/gvfs/ftp:host=cosmo.iap/data/COSMO-LEPS")
 TABLE= data.table()
 TAB_list= list()
 
 temp <- dir()
 cyklus <- 1
-for (i in length(temp)){ 
-  setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]]))
+for (i in 1:7){ 
+  setwd(file.path("/run/user/1000/gvfs/ftp:host=cosmo.iap/data/COSMO-LEPS/", temp[[i]]))
   dirdat=dir()
   
   for (k in seq_along(dirdat)){  
-    setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]]))
+    setwd(file.path("/run/user/1000/gvfs/ftp:host=cosmo.iap/data/COSMO-LEPS/", temp[[i]], dirdat[[k]]))
     dirdat2=dir()
 
      for(j in 1: length (dirdat2)){ 
-    setwd(file.path("~/Plocha/Data_CHMU/COSMO_LEPS/", temp[[i]], dirdat[[k]], dirdat2[[j]]))
+    setwd(file.path("/run/user/1000/gvfs/ftp:host=cosmo.iap/data/COSMO-LEPS/", temp[[i]], dirdat[[k]], dirdat2[[j]]))
    # filez <- list.files()
    # file.rename(from=filez, to=sub(pattern="H", replacement=j, filez))   
     agr=dir(pattern="PREC6h")  
@@ -667,7 +671,7 @@ for (i in length(temp)){
     #TABB<-apply(TAB, 1, as.list)
     
     
-    b = brick(agr[l])
+    b = raster(agr[l])
     bb<-extent(10.8401, 19.9304, 47.9968, 51.3391)
     extent(b) <- bb
     b <- setExtent(b, bb, keepres=TRUE)
@@ -691,7 +695,7 @@ for (i in length(temp)){
   
 TABLE = do.call(rbind,TAB_list) 
 
-saveRDS(object = TABLE, file = paste0("/home/vokounm/Plocha/Data_CHMU/DATA_EXTRAKCE/COSMO_LEPS_", i, ".rds"))
+saveRDS(object = TABLE, file = paste0("/home/martin/Plocha/DATA_EXTRAKCE/COSMO_LEPS_", i, ".rds"))
 
 rm(TABLE)
 gc()
@@ -699,9 +703,10 @@ gc()
   }  
 
 
-### Spojeni tabulek #####
+    ### Spojeni tabulek #####
 
-setwd("~/Plocha/Data_CHMU/DATA_EXTRAKCE")
+#setwd("~/Plocha/Data_CHMU/DATA_EXTRAKCE")
+setwd("~/Plocha/DATA_EXTRAKCE")
 
 #ALADIN_CZ
 df <- list.files(pattern = "ALADIN") 
@@ -730,14 +735,33 @@ dat_list = lapply(df, function (x) data.table(readRDS(x)))
 dat = rbindlist(dat_list, fill = TRUE)
 dat1=unique(dat)
 dc = dcast.data.table(dat1, TIME + ID ~ MODEL, value.var = "value")
-saveRDS(dat, "merge.rds")
+saveRDS(dc, "merge.rds")
 
 
 
 a=readRDS("ALADIN_CZ.rds")
+aa=with_tz(a$TIME,"UTC") #zmena z CEST na UTC
+aaa=aa+(2*60*60) #pricist 2 hodiny
+a$TIME=aaa
+ao=with_tz(a$ORIGIN,"UTC")
+aoo=ao+(2*60*60)
+a$ORIGIN=aoo
+
 b=readRDS("LAEF.rds")
+bt=with_tz(b$TIME,"UTC")
+btt=bt+(2*60*60)
+b$TIME=btt
+bo=with_tz(b$ORIGIN,"UTC")
+boo=bo+(2*60*60)
+b$ORIGIN=boo
 
 setkey(a, ID, TIME, ORIGIN, AHEAD)
 setkey(b, ID, TIME, ORIGIN, AHEAD)
 
 verdt=b[a,nomatch=0]
+
+c=readRDS("merge.rds")
+setkey(verdt, ID, TIME)
+setkey(c, ID, TIME)
+
+  fintab=verdt[c,nomatch=0]
